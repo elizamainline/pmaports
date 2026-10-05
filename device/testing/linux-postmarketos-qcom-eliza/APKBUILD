@@ -1,0 +1,82 @@
+# Reference: <https://postmarketos.org/vendorkernel>
+# Kernel config based on: arch/arm64/configs/defconfig + eliza_defconfig
+maintainer="Oleksii Onchul <oleksiionchul@gmail.com>"
+_flavor="postmarketos-qcom-eliza"
+pkgname=linux-$_flavor
+pkgver=7.3_rc3
+pkgrel=0
+pkgdesc="Mainline kernel fork for the Nothing Phone (4a) Pro"
+arch="aarch64"
+_carch="arm64"
+url="https://github.com/elizamainline/linux"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps
+	pmb:cross-native
+	pmb:kconfigcheck-community
+	pmb:kconfigcheck-uefi
+	pmb:kconfigcheck-virt
+"
+makedepends="
+	bash
+	bc
+	bison
+	clang
+	elfutils-dev
+	findutils
+	flex
+	linux-headers
+	lld
+	llvm
+	openssl-dev
+	pahole
+	perl
+	postmarketos-installkernel
+	python3
+	zstd
+"
+
+_commit="c3e09faf2a447f510b6ab8c13a5489f6b48f34ef"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::$url/archive/$_commit.tar.gz
+	$_config
+"
+builddir="$srcdir/linux-$_commit"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/$_config" .config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" LLVM=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1))-$_flavor"
+}
+
+package() {
+	# ZBOOT EFI decompressor for EFI booting
+	install -Dm644 "$builddir/arch/$_carch/boot/vmlinuz.efi" \
+		"$pkgdir/boot/linux.efi"
+
+	# Old GZIP'd kernel image for boot.img compatibility
+	install -Dm644 "$builddir/arch/$_carch/boot/vmlinuz" \
+		"$pkgdir/boot/vmlinuz"
+
+	make modules_install dtbs_install \
+		ARCH="$_carch" \
+		LLVM=1 \
+		INSTALL_PATH="$pkgdir"/boot/ \
+		INSTALL_MOD_PATH="$pkgdir"/usr \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
+	rm -f "$pkgdir"/lib/modules/*/build "$pkgdir"/lib/modules/*/source
+
+	install -D "$builddir"/include/config/kernel.release \
+		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
+}
+
+sha512sums="
+f66c99cd9eef88bc05ad9b21745b1b8ed53338d3b15d334dbe0eba05090c0ec571969e6899007417d675e29049e34e622df7729e452630b62ca8cbfc53f1a7e1  linux-postmarketos-qcom-eliza-c3e09faf2a447f510b6ab8c13a5489f6b48f34ef.tar.gz
+57e2316d73fd286d9e6118dc648b9a7d03426035024ecab93c8ec6be34de40be85f4ea50fc839970448b8a248d064628eee39761a865cc89a3244be0f2ac5d4b  config-postmarketos-qcom-eliza.aarch64
+"
