@@ -1,0 +1,90 @@
+# Reference: <https://postmarketos.org/devicepkg>
+maintainer="Oleksii Onchul <oleksiionchul@gmail.com>"
+pkgname=device-nothing-froggerpro
+pkgdesc="Nothing Phone (4a) Pro"
+pkgver=1
+pkgrel=15
+url="https://postmarketos.org"
+license="MIT AND BSD-3-Clause"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	alsa-ucm-conf
+	firmware-nothing-froggerpro-adreno
+	firmware-nothing-froggerpro-adsp
+	firmware-nothing-froggerpro-amplifiers
+	firmware-nothing-froggerpro-audio
+	firmware-nothing-froggerpro-bluetooth
+	firmware-nothing-froggerpro-cdsp
+	firmware-nothing-froggerpro-dsp
+	firmware-nothing-froggerpro-ipa
+	firmware-nothing-froggerpro-modem
+	firmware-nothing-froggerpro-sensors
+	firmware-nothing-froggerpro-vpu
+	firmware-nothing-froggerpro-wpss
+	linux-firmware-ath11k
+	linux-postmarketos-qcom-eliza
+	make-dynpart-mappings
+	mkbootimg
+	postmarketos-base
+	soc-qcom
+	soc-qcom-modem
+	systemd-boot
+"
+makedepends="devicepkg-dev"
+makedepends_build="alsa-utils"
+source="
+	81-libssc-nothing-froggerpro.rules
+	72-feedbackd-nothing-froggerpro.rules
+	hexagonrpcd-adsp-sensorspd.conf
+	hexagonrpcd-adsp-sensorspd-systemd.conf
+	deviceinfo
+	modules-initfs
+	froggerpro-tplg.conf
+	alsa-ucm-conf/froggerpro.conf
+	alsa-ucm-conf/HiFi.conf
+"
+
+build() {
+	devicepkg_build $startdir $pkgname
+	alsatplg -c "$srcdir"/froggerpro-tplg.conf -o "$srcdir"/froggerpro-tplg.bin
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+
+	install -Dm644 "$srcdir"/froggerpro-tplg.bin \
+		"$pkgdir/usr/lib/firmware/qcom/froggerpro/Nothing Phone (4a) Pro-tplg.bin"
+
+	install -Dm644 "$srcdir"/froggerpro.conf \
+		"$pkgdir/usr/share/alsa/ucm2/Qualcomm/froggerpro/froggerpro.conf"
+	install -Dm644 "$srcdir"/HiFi.conf \
+		"$pkgdir/usr/share/alsa/ucm2/Qualcomm/froggerpro/HiFi.conf"
+	mkdir -p "$pkgdir/usr/share/alsa/ucm2/conf.d/froggerpro"
+	ln -s ../../Qualcomm/froggerpro/froggerpro.conf \
+		"$pkgdir/usr/share/alsa/ucm2/conf.d/froggerpro/froggerpro.conf"
+
+	install -Dm644 "$srcdir"/81-libssc-nothing-froggerpro.rules \
+		"$pkgdir"/usr/lib/udev/rules.d/81-libssc-nothing-froggerpro.rules
+
+	install -Dm644 "$srcdir"/72-feedbackd-nothing-froggerpro.rules \
+		"$pkgdir"/usr/lib/udev/rules.d/72-feedbackd-nothing-froggerpro.rules
+
+	install -Dm644 "$srcdir"/hexagonrpcd-adsp-sensorspd.conf \
+	"$pkgdir"/usr/share/hexagonrpcd/hexagonrpcd-adsp-sensorspd.conf
+
+	install -Dm644 "$srcdir"/hexagonrpcd-adsp-sensorspd-systemd.conf \
+	"$pkgdir"/usr/lib/systemd/system/hexagonrpcd-adsp-sensorspd.service.d/10-froggerpro.conf
+}
+
+sha512sums="
+cae90d2744bc2dcd77f4997614b45ba8684133375fbafb4d431894b418be09d1341fbe002c12bb9cdab08d10bc05df817e373df9bfbce37d7c27fd65fa62d64a  81-libssc-nothing-froggerpro.rules
+fdaff73a4b025af726cbbf57a17c48194a280b0b3a3a02d9f919cbd56e5499ea47e4fcb5a0d69433ab3757af5a008564eb44567f707b5380fbaf79005566d3e0  72-feedbackd-nothing-froggerpro.rules
+08b46986b063fc00713c36cacec7d5eff462b345200d16e9b973b8a8e6eb8f5b399e57f39427637eaac9cb28f626a8d41f82a9d9c3ca8be85818ea5ded5f3a43  hexagonrpcd-adsp-sensorspd.conf
+4facf141487729cd3e0ac2e51516789108085d73b8d4c78fdc102431babfa18683312998a627b7cd6ca1c1a86f03afa56d7c1056a346da0d02d67d9f270f81fc  hexagonrpcd-adsp-sensorspd-systemd.conf
+0e8620632b79bf8720537731aa2a48060e7ff7ebaadac6f87be263d0f99e3a0c914c6871d759909d7c54d88bbd33a385998cdfd88d04f37e217b86d2c0723a19  deviceinfo
+44c5a038eae26f99f9f85710199794a89cb3d6e78d3f00545e5165de2e628f6fd339fb6b7b59f02726e51ac4bab6a66a5691a956b088d5f9d3e0aeb17fdb7c41  modules-initfs
+b885e7df23af2464e32ee3e5e9bc4d43a20eb7086c05473d26a33d26a63d72eaf855419ab625013e93a2c7fec177e4672dce795f0b622fa775aa74e067b02d9b  froggerpro-tplg.conf
+ce07b4e1c929717525484fa7b0748ec39efdfce7de5f20127d68866d39ce153608b489d6b9e26ae03e65eb8ab0048b2b5fe98e826780b40f1e37628f0ae1c807  froggerpro.conf
+7b181e39dddf65a8cbfef556a3176c8c259a2227cf29d84de952763a79c96576edbf1861fa0ba7df35baf3d1a1174f17a85fef1ce9fb22eda6f0a50782f00ec5  HiFi.conf
+"
